@@ -13,6 +13,11 @@ class Enviroment():
         #Create Graph 
         self.G, self.node_names = self.__buildGraph(init_pheromone)
 
+        # Initialize Q-values
+        self.Q = nx.DiGraph()
+        for edge in self.G.edges():
+            self.Q.add_edge(edge[0], edge[1], pheromone=init_pheromone)
+
 
     def __readData(self, file_name):
         """
@@ -122,31 +127,37 @@ class Enviroment():
         return [edge for edge in self.G.edges]
 
     
-    def updatePheromone(
-        self,
-        evaporation_rate,
-        cycle_edge_contribution): 
+    def updatePheromone(self, evaporation_rate, cycle_edge_contribution):
         """
         Simulates the pheromone evaporation
-        at each edge by multipling the 
+        at each edge by multiplying the 
         evaporation rate to the old 
         pheromone values.
-        And simulates the ants pherommone
+        And simulates the ants pheromone
         trails contribution when adding 
         the sum of the inverse of the 
         time of the path that passed 
-        through that edge..
+        through that edge.
         """
         for edge in self.G.edges:
             from_node = edge[0]
             to_node = edge[1]
             old_pheromone = self.G[from_node][to_node]['pheromone']
-            new_pheromone = cycle_edge_contribution[edge] + (evaporation_rate * old_pheromone)
+
+            # Update Q-value with the reward (inverse of path time)
+            if cycle_edge_contribution[edge] != 0:
+                reward = 1 / cycle_edge_contribution[edge]
+            else:
+                reward = 0  # Handle division by zero
+
+            self.Q[from_node][to_node]['pheromone'] += reward
+
+            # Update pheromone levels
+            new_pheromone = (1 - evaporation_rate) * old_pheromone + evaporation_rate * self.Q[from_node][to_node]['pheromone']
             if new_pheromone > self.min_pheromone:
                 self.G[from_node][to_node]['pheromone'] = new_pheromone
             else:
-                self.G[from_node][to_node]['pheromone'] = self.min_pheromone    
-
+                self.G[from_node][to_node]['pheromone'] = self.min_pheromone
 
     def calculateMakespanTime(self, path):
         """
@@ -217,6 +228,7 @@ class Enviroment():
         results:
             png image: 'code/graph.png'
         """
+        print('entered function')
         options = {
             'node_color': 'blue',
             'node_size': 2000,
@@ -234,11 +246,16 @@ class Enviroment():
             weight = "(" + str(desirability) + " - " +  str(pheromone)+")"
             edge_labels.update({(from_node, to_node) : weight})
 
+        print("middle")
+
         #Generating figure    
         fig = plt.figure()        
         ax = fig.add_subplot(111)
         pos = nx.spring_layout(self.G)
         nx.draw_networkx_edge_labels(self.G,pos,edge_labels=edge_labels, font_size=7)
         nx.draw_networkx(self.G, pos, arrows=True, ax=ax, **options)
+        print("saving")
         fig.savefig('graph.png')
+
+        print("done")
 

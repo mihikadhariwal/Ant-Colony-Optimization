@@ -4,6 +4,7 @@ import copy
 from statistics import mean, stdev
 import json
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 class ACO():
@@ -50,8 +51,10 @@ class ACO():
                 {cycle : [Fastest, Mean, Longest], ...}
         """
         results_control = {}
+        global all_times
         all_times = []
         fastest_path = []
+        best_cycle_times = []
         for cycle_number in range(self.cycles):
             this_cycle_times = []
             #Get the updated graph:
@@ -70,7 +73,13 @@ class ACO():
                     this_cycle_edges_contributions[edge] += self.pheromone_constant/path_time
                 #Recording cycle values:
                 this_cycle_times.append(path_time)
+                # print("this cycle", this_cycle_times)
+                # print(len(this_cycle_times))
                 all_times.append(path_time)
+
+                # Track the best time for the current cycle
+            best_cycle_times.append(min(this_cycle_times))
+            # print("best cycle time length", len(best_cycle_times))
 
             #Update pheromone on edges of the graph
             self.enviroment.updatePheromone(
@@ -93,4 +102,24 @@ class ACO():
         print("Standard deviation: ", stdev(all_times))
         print("BEST PATH TIME: ", min(all_times), " seconds")
         print("---------------------------------------------------")
- 
+        # print("all times", all_times)
+        # print("length of all times", len(all_times))
+        # print(best_cycle_times)
+
+        self.printGraph(best_cycle_times)
+
+    def printGraph(self, best_cycle_times):
+        iterations = range(1, len(best_cycle_times) + 1)
+    
+        plt.figure(figsize=(10, 6))
+        plt.plot(iterations, best_cycle_times, label='Best makespan time')
+        plt.xlabel('Iteration')
+        plt.ylabel('BestMakespan Time)')
+        plt.title('Std Deviation vs Iteration with Reinforcement Learning')
+        plt.legend()
+        plt.grid(True)
+        plt.show()
+    
+        
+
+    
